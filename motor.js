@@ -17,7 +17,7 @@ const Motor = (() => {
   const ZAR = 5;
   const BARDAK = 2;
   const SURE = 30;
-  const BEKLE = { salla: 1900, acilis: 3800, icHazir: 2600, sonra: 2400, tur: 900 };
+  const BEKLE = { salla: 1900, acilis: 3600, icHazir: 2600, sonra: 2400, tur: 900 };
 
   let o = null;
   let dinleyici = () => {};
@@ -166,7 +166,8 @@ const Motor = (() => {
     o.kaybeden = kaybeden;
     o.acilan = { tur, no, atan, adet, yuz, sayi, zarlar: o.oyuncular.map(p => p.zarlar) };
     olay('ac', { ...o.acilan, kaybeden, joker: o.ayar.joker, r: Math.random() });
-    zamanlayici = setTimeout(icHazirla, BEKLE.acilis);
+    // Zarlar tek tek sayılırken bekle (her zar 0,6 sn), sonra sonucu okumaya biraz zaman
+    zamanlayici = setTimeout(icHazirla, BEKLE.acilis + Math.max(1, sayi) * 600);
     return true;
   }
   const yalanci = no => ac(no, 'yalanci');

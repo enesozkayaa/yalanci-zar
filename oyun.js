@@ -182,7 +182,7 @@ function olayGeldi(tip, v, d) {
       });
     }, 500);
     // Sonuç: sayım bittikten sonra
-    const sonucZamani = 500 + 700 + Math.max(1, v.sayi) * 280 + 400;
+    const sonucZamani = 500 + 1000 + Math.max(1, v.sayi) * 600 + 500;
     setTimeout(() => {
       const kim = v.kaybeden === ui.benimNo ? 'Sen' : adi(v.kaybeden);
       const sonuc = tamMi

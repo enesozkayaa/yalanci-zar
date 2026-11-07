@@ -1173,7 +1173,7 @@ const Sahne = (() => {
       const z = zarYap();
       const ac = (i / 5) * Math.PI * 2 + 0.3, r = i === 4 ? 0 : 0.055;
       z.position.copy(kt.bardakYeri).add(V(Math.cos(ac) * r, ZAR_B / 2 + 0.001, Math.sin(ac) * r));
-      if (i === 4) z.position.y += 0;
+      z.userData.yer = z.position.clone();
       zarAyarla(z, 1 + Math.floor(Math.random() * 6));
       sahne.add(z);
       kt.zarlar.push(z);
@@ -1216,6 +1216,8 @@ const Sahne = (() => {
       kt.zarlar.forEach((z, i) => {
         zarAyarla(z, kt.no === benimNo && benimZarlarim ? benimZarlarim[i] : 1 + Math.floor(Math.random() * 6));
         z.userData.halka.material.opacity = 0;
+        z.position.copy(z.userData.yer);
+        z.scale.setScalar(1);
         z.visible = true;
       });
       const faz = Math.random() * 3;
@@ -1237,14 +1239,27 @@ const Sahne = (() => {
 
   // "Yalancı!" / "TAM!": bütün bardaklar kalkar, gerçek zarlar görünür, iddia edilen sayıdakiler
   // tek tek parlar. sayildi(n) her sayılan zarda çağrılır.
+  // Açılışta zarlar büyür ve aralanır (uzaktan da okunsun); sayım yavaş yavaş yapılır
+  const ACIK_OLCEK = 1.9, SAYIM_ARA = 0.6, SAYIM_BAS = 1.0;
   function zarlariAc(zarlar, yuz, joker, sayildi) {
     const sayilacak = [];
     koltuklar.forEach(kt => {
       const dz = zarlar[kt.no];
       if (!kt.bardak || !dz?.length) return;
+      const merkez = kt.bardakYeri;
       kt.zarlar.forEach((z, i) => {
         zarAyarla(z, dz[i]);
         z.visible = true;
+        const bas = z.userData.yer.clone();
+        const hedef = merkez.clone().add(bas.clone().sub(merkez).multiplyScalar(2.1));
+        hedef.y = MASA_Y + (ZAR_B * ACIK_OLCEK) / 2 + 0.001;
+        z.userData.acikYer = hedef;
+        animEkle(0.5, p => {
+          const e = 1 - Math.pow(1 - p, 3);
+          z.position.lerpVectors(bas, hedef, e);
+          z.position.y += Math.sin(Math.PI * p) * 0.05;
+          z.scale.setScalar(1 + (ACIK_OLCEK - 1) * e);
+        }, null, 0.3);
         if (dz[i] === yuz || (joker && dz[i] === 1 && yuz !== 1)) sayilacak.push(z);
       });
       // Bardak kalkıp oyuncuya doğru devrilir
@@ -1255,18 +1270,18 @@ const Sahne = (() => {
       const ileri = V(Math.sin(ac0), 0, Math.cos(ac0));
       animEkle(0.5, p => {
         const e = 1 - Math.pow(1 - p, 3);
-        b.position.set(yer.x + sag.x * 0.2 * e, yer.y + 0.12 * e, yer.z + sag.z * 0.2 * e);
+        b.position.set(yer.x + sag.x * 0.34 * e, yer.y + 0.12 * e, yer.z + sag.z * 0.34 * e);
         b.rotation.set(0, 0, 0);
         b.rotateOnWorldAxis(ileri, -1.6 * e);
       });
     });
     sayilacak.forEach((z, i) => {
-      animEkle(0.35, p => {
-        z.userData.halka.material.opacity = Math.min(1, p * 2) * 0.9;
-        z.position.y = MASA_Y + ZAR_B / 2 + 0.001 + Math.sin(Math.PI * p) * 0.04;
-      }, () => sayildi(i + 1, z.getWorldPosition(V())), 0.7 + i * 0.28);
+      animEkle(0.45, p => {
+        z.userData.halka.material.opacity = Math.min(1, p * 2) * 0.95;
+        z.position.y = z.userData.acikYer.y + Math.sin(Math.PI * p) * 0.08;
+      }, () => sayildi(i + 1, z.getWorldPosition(V())), SAYIM_BAS + i * SAYIM_ARA);
     });
-    if (!sayilacak.length) setTimeout(() => sayildi(0, null), 800);
+    if (!sayilacak.length) setTimeout(() => sayildi(0, null), SAYIM_BAS * 1000);
     return sayilacak.length;
   }
   function bardaklariKapat() {
@@ -1277,7 +1292,14 @@ const Sahne = (() => {
         b.position.lerpVectors(bas, kt.bardakYeri, p);
         b.quaternion.slerpQuaternions(q0, q1, p);
       });
-      kt.zarlar.forEach(z => (z.userData.halka.material.opacity = 0));
+      kt.zarlar.forEach(z => {
+        z.userData.halka.material.opacity = 0;
+        const bas = z.position.clone(), s0 = z.scale.x;
+        animEkle(0.45, p => {
+          z.position.lerpVectors(bas, z.userData.yer, p);
+          z.scale.setScalar(s0 + (1 - s0) * p);
+        });
+      });
     });
   }
 
